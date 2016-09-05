@@ -1,0 +1,26 @@
+{
+  "name": "yande.re-crawler",
+  "version": "1.0.0",
+  "description": "P.S. no filter to r-18 auto-hidden image!",
+  "main": "yande.js",
+  "dependencies": {
+    "cheerio": "^0.22.0",
+    "fs": "^0.0.1-security",
+    "request": "^2.74.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yanagiragi/yande.re-crawler.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yanagiragi/yande.re-crawler/issues"
+  },
+  "homepage": "https://github.com/yanagiragi/yande.re-crawler#readme"
+}
