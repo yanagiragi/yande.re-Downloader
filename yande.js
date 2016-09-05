@@ -39,18 +39,35 @@ function getPage(str){
 
 function getPic(body){
 	var $ = cheerio.load(body);
-	var news = $('#post-list-posts li .directlink').each(function(i,elem){
+	/*var news = $('#post-list-posts li .directlink').each(function(i,elem){
 		
 		var filename = elem.attribs.href;
 		var l = filename.lastIndexOf('/');
 		var storename = filename.substr(l + 1,filename.length);
 		
-
-
-	limiter.removeTokens(1, function() {
-  		storeImg(filename,storename);
-	});
+		limiter.removeTokens(1, function() {
+	  		storeImg(filename,storename);
+		});
 		
+	});*/
+	var news = $('#post-list-posts li .thumb').each(function(i,elem){
+		var filename = elem.attribs.href;
+		request(str+filename, function(err, res, body){
+			if(!err){
+				var $ = cheerio.load(body);
+				var data = $('.original-file-unchanged');
+				if(typeof data[0] != "undefined"){
+					var filename = data[0].attribs.href;
+					var l = filename.lastIndexOf('/');
+					var storename = filename.substr(l + 1,filename.length);
+					
+					limiter.removeTokens(1, function() {
+						  		storeImg(filename,storename);
+					});
+
+				}
+			}
+		});
 	});
 	//checkUpdate();
 	return;
