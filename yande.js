@@ -1,20 +1,22 @@
 var request = require ('request');
 var cheerio = require('cheerio');
 var fs = require('fs');
+var RateLimiter = require('limiter').RateLimiter;
+var limiter = new RateLimiter(1, 1250); // Send Request every 1250ms to avoid errCode 429 (Too Many Requests)
 
-var storeindex = "../Storage/Img_N/";
+var storeindex = "Storage/";
 var str = "https://yande.re/";
 var exists = new Array();
 // refers to yande.re/page=1
 
 checkUpdate();
-var interval = setInterval(function() {
+/*var interval = setInterval(function() {
 	checkUpdate();
-}, 1000 * 60 * 5);
+}, 1000 * 60 * 5);*/
 
 
 function checkUpdate(){
-	console.log("Checking Update Info...");
+	console.log("檢查中...");
 	getPage(str);
 }
 
@@ -24,11 +26,13 @@ function getPage(str){
 			getPic(body);
 		}
 		else{
-			fs.appendFile('errorLog.txt', "BIG ERROR\n" + response.statusCode + " : " + str + "\n" + dates + "\n\n", function (err) {
+			console.log("無法抓取頁面！");
+			process.exit();
+			/*fs.appendFile('errorLog.txt', "BIG ERROR\n" + response.statusCode + " : " + str + "\n" + dates + "\n\n", function (err) {
 				if(err) console.log("Error when writing errorLog.txt! ");
-				clearInterval(interval);
-				process.exit();
-			});
+				//clearInterval(interval);
+				
+			});*/
 		}
 	});
 }
@@ -41,7 +45,12 @@ function getPic(body){
 		var l = filename.lastIndexOf('/');
 		var storename = filename.substr(l + 1,filename.length);
 		
-		storeImg(filename,storename);
+
+
+	limiter.removeTokens(1, function() {
+  		storeImg(filename,storename);
+	});
+		
 	});
 	//checkUpdate();
 	return;
@@ -52,25 +61,25 @@ function storeImg(filename,storename){
 	fs.exists(storeindex+storename, function(exists) { 
 		if (!exists) { 
 			
-			console.log("pending " + filename + " ...");
+			console.log("抓取 " + filename + " 中...");
 			
 			request.get( {url : filename, encoding : 'binary'},
 				function(error, response, body){
 					if(!error && response.statusCode == 200){
 						
 						fs.writeFile(storeindex + storename,body,'binary');
-						console.log(storename + " has stored.");
+						console.log("> 已存 : " + storename );
 						
 						var dates = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
-						fs.appendFile('savedLog.txt', storename + "\n" + dates + "\n\n", function (err) {
+						/*fs.appendFile('savedLog.txt', storename + "\n" + dates + "\n\n", function (err) {
 							if(err) console.log("Error when writing savedLog.txt! ");
-						});
+						});*/
 					}
 					else{
 						console.log("error on pending " + filename + " , errCode = " + response.statusCode);
-						fs.appendFile('errorLog.txt', storename + "\n", function (err) {
+						/*fs.appendFile('errorLog.txt', storename + "\n", function (err) {
 							if(err) console.log("Error when writing errorLog.txt! ");
-						});
+						});*/
 					}
 				}
 			);
