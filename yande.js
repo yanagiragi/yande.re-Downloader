@@ -39,18 +39,6 @@ function getPage(str){
 
 function getPic(body){
 	var $ = cheerio.load(body);
-	/*var news = $('#post-list-posts li .directlink').each(function(i,elem){
-		
-		var filename = elem.attribs.href;
-		var l = filename.lastIndexOf('/');
-		var storename = filename.substr(l + 1,filename.length);
-		
-		limiter.removeTokens(1, function() {
-	  		storeImg(filename,storename);
-		});
-		
-	});*/
-
 	var news = $('#post-list-posts li .thumb').each(function(i,elem){
 		var filename = elem.attribs.href;
 		request(str+filename, function(err, res, body){
@@ -58,8 +46,11 @@ function getPic(body){
 				var $ = cheerio.load(body);
 				var data = $('.original-file-unchanged');
 				
-				if(typeof data[0] == "undefined")
+				if(typeof data[0] == "undefined" || typeof data[0].attribs == "undefined")
 					data = $('.original-file-changed');
+				
+				if(typeof data[0] == "undefined")
+					return ;
 				
 				var filename = data[0].attribs.href;
 					var l = filename.lastIndexOf('/');
@@ -71,24 +62,22 @@ function getPic(body){
 			}
 		});
 	});
-	//checkUpdate();
 	return;
 }
 
-function storeImg(filename,storename){
-	
+function storeImg(filename,storename){	
 	fs.exists(storeindex+storename, function(exists) { 
-		if (!exists) { 
+		if (!exists) { 			
 			
-			console.log("抓取 " + filename + " 中...");
+			console.log("抓取 " + filename + " 中...");			
 			
 			request.get( {url : filename, encoding : 'binary'},
 				function(error, response, body){
-					if(!error && response.statusCode == 200){
-						
+					if(!error && response.statusCode == 200){						
 						fs.writeFile(storeindex + storename,body,'binary');
-						console.log("> 已存 : " + storename );
 						
+						console.log("> 已存 : " + storename );
+
 						var dates = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
 						/*fs.appendFile('savedLog.txt', storename + "\n" + dates + "\n\n", function (err) {
 							if(err) console.log("Error when writing savedLog.txt! ");
