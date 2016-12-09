@@ -1,6 +1,7 @@
 var fs = require('fs');
 var dateFormat = require('dateformat');
 var tar = require('tar');
+//var tar = require('tar.gz');
 var fstream = require('fstream');
 const spawn = require('child_process').spawn;
 const exec = require('child_process').exec;
@@ -17,7 +18,7 @@ function rm(){
 function mv(){
 	var proc = exec('mv ' + __dirname + '/Storage/*' + ' ' +  __dirname + '/_Compress/temp');
 	proc.on('close', (code) => {
-		console.log(`child process exited with code ${code}`);
+		console.log(`mv exited with code ${code}`);
 		compress();
 	});
 }
@@ -25,8 +26,13 @@ function mv(){
 function compress(){
 	
 	var day = dateFormat(new Date(), "yyyy-mm-dd");
-	var storeindex = __dirname + '/_Compress/temp';
+	var storeindex = __dirname + '/_Compress/temp/';
 	var tarindex = __dirname + '/_Compress/' + day + '.tar';
+
+	/*var read = tar().createReadStream(storeindex);
+	var write = fs.createWriteStream(tarindex);
+	read.pipe(write);*/
+
 	process.chdir(storeindex);
 
 	var dirDest = fs.createWriteStream(tarindex);
@@ -49,5 +55,6 @@ function compress(){
 	    .on('error', onError)
         .pipe(packer)
         .pipe(dirDest);
+    
 }
 
