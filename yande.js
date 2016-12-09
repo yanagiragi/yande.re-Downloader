@@ -1,23 +1,39 @@
 var request = require ('request');
 var cheerio = require('cheerio');
 var fs = require('fs');
+var dateFormat = require('dateformat');
 var RateLimiter = require('limiter').RateLimiter;
 var limiter = new RateLimiter(1, 4000); // Send Request every 1250ms to avoid errCode 429 (Too Many Requests)
+const spawn = require('child_process').spawn;
 
 var storeindex = "Storage/";
-var str = "https://yande.re/";
-var exists = new Array();
-// refers to yande.re/page=1
+var str = "https://yande.re/"; // refers to yande.re/page=1
+var nowday = dateFormat(new Date(), "yyyy-mm-dd");
 
 checkUpdate();
-/*var interval = setInterval(function() {
+var interval = setInterval(function() {
 	checkUpdate();
-}, 1000 * 60 * 5);*/
+}, 1000 * 60 * 5);
 
 
 function checkUpdate(){
-	console.log("檢查中...");
-	getPage(str);
+	//if()
+	var day = dateFormat(new Date(), "yyyy-mm-dd");
+	if(day.toString() != nowday.toString()){
+		
+		nowday = day;
+		console.log('start compress!');
+		
+		var s = spawn('node',['compress.js']);
+		s.on('close', (code) => {
+			console.log('Done Compress with return code ' + code);
+			getPage(str);
+		});
+	}
+	else{
+		console.log("Check...");
+		getPage(str);
+	}
 }
 
 function getPage(str){
@@ -26,13 +42,8 @@ function getPage(str){
 			getPic(body);
 		}
 		else{
-			console.log("無法抓取頁面！");
+			console.log("Unable to fetch page");
 			process.exit();
-			/*fs.appendFile('errorLog.txt', "BIG ERROR\n" + response.statusCode + " : " + str + "\n" + dates + "\n\n", function (err) {
-				if(err) console.log("Error when writing errorLog.txt! ");
-				//clearInterval(interval);
-				
-			});*/
 		}
 	});
 }
@@ -51,43 +62,43 @@ function getPic(body){
 				
 				if(typeof data[0] == "undefined")
 					return ;
-				
+
 				var filename = data[0].attribs.href;
-					var l = filename.lastIndexOf('/');
-					var storename = filename.substr(l + 1,filename.length);
+				var l = filename.lastIndexOf('/');
+				var storename = filename.substr(l + 1,filename.length);
 					
-					limiter.removeTokens(1, function() {
-						  	storeImg(filename,storename);
-					});
+				limiter.removeTokens(1, function() {
+					  	storeImg(filename,storename);
+				});
 			}
 		});
 	});
 	return;
 }
 
-function storeImg(filename,storename){	
+function storeImg(filename,storename){
+	
 	fs.exists(storeindex+storename, function(exists) { 
-		if (!exists) { 			
+		if (!exists) { 
 			
-			console.log("抓取 " + filename + " 中...");			
+			console.log("fetching " + filename + " ...");
 			
 			request.get( {url : filename, encoding : 'binary'},
 				function(error, response, body){
-					if(!error && response.statusCode == 200){						
-						fs.writeFile(storeindex + storename,body,'binary');
-						
-						console.log("> 已存 : " + storename );
-
-						var dates = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
-						/*fs.appendFile('savedLog.txt', storename + "\n" + dates + "\n\n", function (err) {
-							if(err) console.log("Error when writing savedLog.txt! ");
-						});*/
+					if(!error && response.statusCode == 200){
+						if(storename.length > 100){ 
+							// For GNU, tar only support filename length not extend 100
+							var extension = storename.substr(storename.length-4);
+							console.log(extension);
+							storename = storename.substr(0, 96) + extension;
+							console.log("Cut original name to :" + storename);
+						}
+						fs.writeFile(storeindex + storename, body, 'binary');
+						console.log("> stored : " + storename );
 					}
 					else{
-						console.log("error on pending " + filename + " , errCode = " + response.statusCode);
-						/*fs.appendFile('errorLog.txt', storename + "\n", function (err) {
-							if(err) console.log("Error when writing errorLog.txt! ");
-						});*/
+						if(typeof response.statusCode != "undefined")
+							console.log("error on pending " + filename + " , errCode = " + response.statusCode);
 					}
 				}
 			);
