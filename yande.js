@@ -3,7 +3,7 @@ var cheerio = require('cheerio');
 var fs = require('fs');
 var url = require('urlencode');
 var dateFormat = require('dateformat');
-var santitize = require('sanitize-filename');
+var sanitize = require('sanitize-filename');
 var RateLimiter = require('limiter').RateLimiter;
 var limiter = new RateLimiter(1, 4000); // Send Request every 1250ms to avoid errCode 429 (Too Many Requests)
 const spawn = require('child_process').spawn;
@@ -88,7 +88,7 @@ function storeImg(filename,storename){
 			request.get( {url : filename, encoding : 'binary'},
 				function(error, response, body){
 					if(!error && response.statusCode == 200){
-						storename = santitize( url.decode(storename) );
+						storename = sanitize( url.decode(storename) );
 						if(storename.length > 100){ 
 							// For GNU, tar only support filename length not extend 100
 							var extension = storename.substr(storename.length-4);

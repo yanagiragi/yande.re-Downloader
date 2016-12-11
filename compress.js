@@ -35,7 +35,11 @@ function compress(){
 
 	process.chdir(storeindex);
 
-	var dirDest = fs.createWriteStream(tarindex);
+	var proc = exec('tar -cf ' + tarindex + ' *');
+	proc.on('close', (code) => {
+		console.log(`mv exited with code ${code}`);
+	});
+	/*var dirDest = fs.createWriteStream(tarindex);
 
 	function onError(err) {
 		  console.error('An error occurred:', err)
@@ -55,6 +59,6 @@ function compress(){
 	    .on('error', onError)
         .pipe(packer)
         .pipe(dirDest);
-    
+    */
 }
 
