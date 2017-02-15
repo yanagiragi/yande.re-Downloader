@@ -1,9 +1,5 @@
 var fs = require('fs');
 var dateFormat = require('dateformat');
-var tar = require('tar');
-//var tar = require('tar.gz');
-var fstream = require('fstream');
-const spawn = require('child_process').spawn;
 const exec = require('child_process').exec;
 
 mv();
@@ -11,7 +7,8 @@ mv();
 function rm(){
 	var proc = exec('rm -f *');
 	proc.on('close', (code) => {
-		console.log(`child process exited with code ${code}`);	
+		console.log(`rm exited with code ${code}`);
+    upload()
 	});
 }
 
@@ -24,41 +21,26 @@ function mv(){
 }
 
 function compress(){
-	
 	var day = dateFormat(new Date(), "yyyy-mm-dd");
 	var storeindex = __dirname + '/_Compress/temp/';
-	var tarindex = __dirname + '/_Compress/' + day + '.tar';
-
-	/*var read = tar().createReadStream(storeindex);
-	var write = fs.createWriteStream(tarindex);
-	read.pipe(write);*/
+	var tarindex = __dirname + '/_Compress/' + day + '_yande_re.tar';
 
 	process.chdir(storeindex);
 
 	var proc = exec('tar -cf ' + tarindex + ' *');
 	proc.on('close', (code) => {
 		console.log(`mv exited with code ${code}`);
+    rm()
 	});
-	/*var dirDest = fs.createWriteStream(tarindex);
-
-	function onError(err) {
-		  console.error('An error occurred:', err)
-	}
-	
-	function onEnd() {
-		console.log('Packed!')
-		rm();
-	}
-	
-	var packer = tar.Pack({ noProprietary: true })
-		.on('error', onError)
-	    .on('end', onEnd);
-		
-	// This must be a "directory"
-	fstream.Reader({ path: storeindex, type: "Directory" })
-	    .on('error', onError)
-        .pipe(packer)
-        .pipe(dirDest);
-    */
 }
 
+function upload(){
+  process.chdir(__dirname)
+	var day = dateFormat(new Date(), "yyyy-mm-dd");
+	var tarindex = '_Compress/' + day + '_yande_re.tar';
+
+	var proc = exec('node uploadGoogle.js ' + tarindex);
+	proc.on('close', (code) => {
+		console.log(`upload exited with code ${code}`);
+	});
+}

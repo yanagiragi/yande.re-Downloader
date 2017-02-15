@@ -1,18 +1,29 @@
 {
-  "name": "yande.re",
+  "name": "yande.re-Downloader",
   "version": "1.0.0",
-  "description": "",
-  "main": "yande.js",
+  "description": "P.S. no filter to r-18 auto-hidden image!",
+  "main": "compress.js",
   "dependencies": {
-    "cheerio": "^0.20.0",
+    "cheerio": "^0.22.0",
     "dateformat": "^2.0.0",
-    "fstream": "^1.0.10",
-    "fs": "^0.0.2",
-    "limiter": "^1.1.0",
-    "request": "^2.72.0",
-    "tar": "^2.2.1",
-    "sanitize-filename": "^1.6.1"
+    "file-type": "^4.1.0",
+    "googleapis": "^16.1.0",
+    "read-chunk": "^2.0.0",
+    "request": "^2.79.0"
   },
   "devDependencies": {},
   "scripts": {
-    
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yanagiragi/yande.re-Downloader.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yanagiragi/yande.re-Downloader/issues"
+  },
+  "homepage": "https://github.com/yanagiragi/yande.re-Downloader#readme"
+}

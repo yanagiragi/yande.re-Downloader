@@ -5,7 +5,7 @@ var url = require('urlencode');
 var dateFormat = require('dateformat');
 var sanitize = require('sanitize-filename');
 var RateLimiter = require('limiter').RateLimiter;
-var limiter = new RateLimiter(1, 4000); // Send Request every 1250ms to avoid errCode 429 (Too Many Requests)
+var limiter = new RateLimiter(1, 3 * 4000); // Send Request every 1250ms to avoid errCode 429 (Too Many Requests)
 const spawn = require('child_process').spawn;
 
 var storeindex = "Storage/";
@@ -22,10 +22,10 @@ function checkUpdate(){
 	//if()
 	var day = dateFormat(new Date(), "yyyy-mm-dd");
 	if(day.toString() != nowday.toString()){
-		
+
 		nowday = day;
 		console.log('start compress!');
-		
+
 		var s = spawn('node',['compress.js']);
 		s.on('close', (code) => {
 			console.log('Done Compress with return code ' + code);
@@ -58,17 +58,17 @@ function getPic(body){
 			if(!err){
 				var $ = cheerio.load(body);
 				var data = $('.original-file-unchanged');
-				
+
 				if(typeof data[0] == "undefined" || typeof data[0].attribs == "undefined")
 					data = $('.original-file-changed');
-				
+
 				if(typeof data[0] == "undefined")
 					return ;
 
 				var filename = data[0].attribs.href;
 				var l = filename.lastIndexOf('/');
 				var storename = filename.substr(l + 1,filename.length);
-					
+
 				limiter.removeTokens(1, function() {
 					  	storeImg(filename,storename);
 				});
@@ -79,17 +79,17 @@ function getPic(body){
 }
 
 function storeImg(filename,storename){
-	
-	fs.exists(storeindex+storename, function(exists) { 
-		if (!exists) { 
-			
+
+	fs.exists(storeindex+storename, function(exists) {
+		if (!exists) {
+
 			console.log("fetching " + filename + " ...");
-			
+
 			request.get( {url : filename, encoding : 'binary'},
 				function(error, response, body){
 					if(!error && response.statusCode == 200){
 						storename = sanitize( url.decode(storename) );
-						if(storename.length > 100){ 
+						if(storename.length > 100){
 							// For GNU, tar only support filename length not extend 100
 							var extension = storename.substr(storename.length-4);
 							console.log(extension);
