@@ -42,5 +42,16 @@ function upload(){
 	var proc = exec('node uploadGoogle.js ' + tarindex);
 	proc.on('close', (code) => {
 		console.log(`upload exited with code ${code}`);
+    rmtar()
+	});
+}
+
+function rmtar(){
+	var day = dateFormat(new Date(), "yyyy-mm-dd");
+	var tarindex = '_Compress/' + day + '_yande_re.tar';
+
+	var proc = exec('rm -f ' + tarindex);
+	proc.on('close', (code) => {
+		console.log(`rmtar exited with code ${code}`);
 	});
 }
