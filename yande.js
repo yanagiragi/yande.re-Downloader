@@ -1,125 +1,97 @@
 const fs = require('fs')
-const request = require('request')
+const path = require('path')
+const util = require('util')
+const streamPipeline = util.promisify(require('stream').pipeline)
+
+const fetch = require('node-fetch')
 const cheerio = require('cheerio')
 const dateFormat = require('dateformat')
 const sanitize = require('sanitize-filename')
-const spawn = require('child_process').spawn
+const minimist = require('minimist')
 
-const storePath = 'Storage/'
-const compressPath = '_Compress/'
-const indexPageUrl = 'https://yande.re/' // refers to yande.re/page=1
+const args = minimist(process.argv.slice(2))
 
-var nowday = dateFormat(new Date(), 'yyyy-mm-dd')
+const storeFolder = path.join(__dirname, 'Storage')
 
 if (require.main === module) {
-	setInterval(main, 1000 * 60 * 5)
-	main()
+	// setInterval(main, 1000 * 60 * 5)
+	main(args)
 }
 
-function main () {
-	if (!fs.existsSync(storePath)) { fs.mkdirSync(storePath) }
-	if (!fs.existsSync(compressPath)) { fs.mkdirSync(compressPath) }
-	if (!fs.existsSync(`${compressPath}/temp/`)) { fs.mkdirSync(`${compressPath}/temp/`) }
+async function main (args) {
+	if (!fs.existsSync(storeFolder)) { fs.mkdirSync(storeFolder) }
+	
+	let url = args.p || 'https://yande.re/'
 
-	checkUpdate().then(() => {
-		getPage().then(result => {
-			let filteredResult = result.filter(e => e.indexOf('Skipped') === -1)
-			console.log(`    > Results: ${filteredResult}`)
+	const Process = async function(url) {
+		const result = await getPage(url)
+		result.map(async x => {
+			const downloadble = await getPic(x)
+			storeImg(downloadble.url, downloadble.filepath)
 		})
-	})
-}
+	}
 
-function checkUpdate () {
-	return new Promise((resolve, reject) => {
-		console.log(`Check: ${new Date()}`)
-
-		let day = dateFormat(new Date(), 'yyyy-mm-dd')
-
-		if (day.toString() !== nowday.toString()) {
-			nowday = day
-			console.log('    > Mode: Compress')
-
-			var s = spawn('/home/ragi/.nvm/versions/node/v8.0.0/bin/node', ['compress.js'])
-			s.on('close', (code) => {
-				console.log('    > Done Compress with return code ' + code)
-				resolve()
-			})
-		} else {
-			console.log('    > Mode: Fetch')
-			resolve()
+	if (args.p) {
+		if (Array.isArray(args.p)) {
+			args.p.map(x => Process(x))
 		}
-	})
-}
-
-function getPage () {
-	return new Promise((resolve, reject) => {
-		request(indexPageUrl, function (error, response, body) {
-			if (!error) {
-				let $ = cheerio.load(body)
-				let news = $('#post-list-posts li .thumb')
-
-				console.log(`    > Found ${news.length} pics`)
-
-				let tasks = []
-
-				for (let i = 0; i < news.length; ++i) {
-					let href = indexPageUrl + news[i].attribs.href
-					tasks.push(getPic(href))
-				}
-
-				Promise.all(tasks).then(result => resolve(result))
-			} else {
-				resolve([`Unable to fetch ${indexPageUrl}`])
-			}
-		})
-	})
-}
-
-function getPic (href) {
-	return new Promise((resolve, reject) => {
-		request(href, (err, res, body) => {
-			if (!err) {
-				let $ = cheerio.load(body)
-				let data = $('.original-file-unchanged')
-
-				if (typeof data[0] === 'undefined' || typeof data[0].attribs === 'undefined') { data = $('.original-file-changed') }
-
-				if (typeof data[0] !== 'undefined') {
-					let href = data[0].attribs.href
-					let l = href.lastIndexOf('/')
-					let storename = href.substr(l + 1, href.length)
-					resolve(storeImg(href, storename))
-				} else {
-					resolve(`Error: getPic(${href}).parse`)
-				}
-			} else {
-				resolve(`Error: getPic(${href}).request`)
-			}
-		})
-	})
-}
-
-function storeImg (filename, storename) {
-	return new Promise((resolve, reject) => {
-		let path = `${storePath}${storename}`
-		if (fs.existsSync(path)) {
-			request.get({ url: filename, encoding: 'binary' }, (error, response, body) => {
-				if (!error) {
-					storename = sanitize(decodeURIComponent(storename))
-					if (storename.length > 100) {
-						// For GNU, tar only support filename length not extend 100
-						var extension = storename.substr(storename.length - 4)
-						storename = storename.substr(0, 96) + extension
-						// console.log("Cut original name to :" + storename);
-					}
-					fs.writeFileSync(storePath + storename, body, 'binary')
-					resolve('Stored: ' + storename)
-				} else {
-					resolve(`Error[${(typeof response !== 'undefined') ? response.statusCode : 'undefined'}]: ${filename}`)
-				}
-			})
-		} else {
-			resolve(`Skipped: ${filename}`)
+		else {
+			Process(url)
 		}
-	})
+	}
+
+	
+}
+
+async function getPage (pageUrl) {
+	const resp = await fetch(pageUrl)
+	const body = await resp.text()
+	const $ = cheerio.load(body)
+	const news = $('#post-list-posts li .thumb')
+
+	console.log(`Found ${news.length} pics on ${pageUrl}`)
+
+	const result = []
+
+	for (let i = 0; i < news.length; ++i) {
+		let href = 'https://yande.re/' + $(news[i]).attr('href')
+		result.push(href)
+	}
+
+	return result
+}
+
+async function getPic (href) {
+	const resp = await fetch(href)
+	const body = await resp.text()
+	const $ = cheerio.load(body)
+	const url = $('.original-file-changed').attr('href') || $('.original-file-unchanged').attr('href')
+	const l = url.lastIndexOf('/')
+	const filepath = url.substr(l + 1, url.length)
+	return {
+		url, filepath
+	}
+}
+
+async function storeImg (url, storename) {
+	
+	let name = sanitize(decodeURIComponent(storename))
+	if (name.length > 100) {
+		// For GNU, tar only support filename length not extend 100
+		const extension = name.substr(name.length - 4)
+		name = name.substr(0, 96) + extension
+	}
+
+	const storePath = path.join(storeFolder, name)
+	
+	if (fs.existsSync(storePath)) {
+		console.log(`Skipped: ${url}`)
+		return
+	}
+
+	const resp = await fetch(url)
+	if (!resp.ok) throw new Error(`Error When Downloading ${url}`)
+	await streamPipeline(await resp.body, fs.createWriteStream(storePath))
+
+	console.log(`Store ${url} as ${storePath}`)
 }
