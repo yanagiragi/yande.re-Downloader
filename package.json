@@ -4,7 +4,7 @@
   "description": "P.S. no filter to r-18 auto-hidden image!",
   "main": "compress.js",
   "dependencies": {
-    "cheerio": "^0.22.0",
+    "cheerio": "^1.0.0-rc.12",
     "dateformat": "^2.2.0",
     "minimist": "^1.2.6",
     "node-fetch": "^3.2.10",
